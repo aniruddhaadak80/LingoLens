@@ -36,6 +36,18 @@ export default {
           DEFAULT: "rgba(255, 255, 255, 0.8)",
           foreground: "#1D1D1F",
         },
+        processing: {
+          transcription: "#8B5CF6",
+          translation: "#D946EF",
+          blog: "#F97316",
+          social: "#0EA5E9"
+        }
+      },
+      fontFamily: {
+        transcript: ["Merriweather", "serif"],
+        translation: ["Noto Sans", "sans-serif"],
+        blog: ["Playfair Display", "serif"],
+        social: ["Poppins", "sans-serif"]
       },
       borderRadius: {
         lg: "var(--radius)",
