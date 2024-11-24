@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-
 const Hero = () => {
   return (
     <div className="relative min-h-screen flex items-center justify-center pt-20">
@@ -10,13 +8,13 @@ const Hero = () => {
             Transform Speech into
             <span className="text-primary"> Insights</span>
           </h1>
-          <p className="text-xl text-secondary/60 mb-8 animate-fade-up dark:text-gray-300" style={{ animationDelay: "0.2s" }}>
+          <p className="text-xl text-secondary/60 mb-8 animate-fade-up" style={{ animationDelay: "0.2s" }}>
             Real-time audio transcription, translation, and analytics powered by advanced AI technology.
           </p>
           <div className="animate-fade-up" style={{ animationDelay: "0.4s" }}>
-            <Link to="/upload" className="button-primary">
+            <button className="button-primary">
               Get Started
-            </Link>
+            </button>
           </div>
         </div>
       </div>
