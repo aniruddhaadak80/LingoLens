@@ -34,14 +34,24 @@ const Results = () => {
     blog: '',
     social: ''
   });
+
+  const [isGenerating, setIsGenerating] = useState({
+    blog: false,
+    social: false
+  });
+
+  const [progress, setProgress] = useState({
+    blog: 0,
+    social: 0
+  });
   
   const [qaHistory, setQAHistory] = useState<QAItem[]>([]);
   const [question, setQuestion] = useState('');
   const [hasAskedQuestion, setHasAskedQuestion] = useState(false);
 
-  const handleTranslate = async (type: 'transcript' | 'blog' | 'social', text: string) => {
+  const handleTranslate = async (type: 'transcript' | 'blog' | 'social', text: string, targetLanguage: string) => {
     try {
-      const translated = await translateText(text, selectedLanguages[type]);
+      const translated = await translateText(text, targetLanguage);
       if (type === 'transcript') {
         setContents(prev => ({ ...prev, translatedText: translated }));
       } else {
@@ -127,7 +137,7 @@ const Results = () => {
                   selectedLanguage={selectedLanguages.transcript}
                   onLanguageSelect={(lang) => {
                     setSelectedLanguages(prev => ({ ...prev, transcript: lang }));
-                    handleTranslate('transcript', transcriptionData?.text);
+                    handleTranslate('transcript', transcriptionData?.text, lang);
                   }}
                 />
               </div>
@@ -139,26 +149,38 @@ const Results = () => {
 
           <BlogPostSection
             content={contents.blog}
+            isGenerating={isGenerating.blog}
+            progress={progress.blog}
             selectedLanguage={selectedLanguages.blog}
             onLanguageSelect={(lang) => {
               setSelectedLanguages(prev => ({ ...prev, blog: lang }));
               if (contents.blog) {
-                handleTranslate('blog', contents.blog);
+                handleTranslate('blog', contents.blog, lang);
               }
             }}
-            onGenerate={() => handleGenerateContent('blog')}
+            onGenerate={async () => {
+              setIsGenerating(prev => ({ ...prev, blog: true }));
+              await handleGenerateContent('blog');
+              setIsGenerating(prev => ({ ...prev, blog: false }));
+            }}
           />
 
           <SocialPostSection
             content={contents.social}
+            isGenerating={isGenerating.social}
+            progress={progress.social}
             selectedLanguage={selectedLanguages.social}
             onLanguageSelect={(lang) => {
               setSelectedLanguages(prev => ({ ...prev, social: lang }));
               if (contents.social) {
-                handleTranslate('social', contents.social);
+                handleTranslate('social', contents.social, lang);
               }
             }}
-            onGenerate={() => handleGenerateContent('social')}
+            onGenerate={async () => {
+              setIsGenerating(prev => ({ ...prev, social: true }));
+              await handleGenerateContent('social');
+              setIsGenerating(prev => ({ ...prev, social: false }));
+            }}
           />
 
           {/* Q&A Section */}

@@ -9,21 +9,25 @@ import { toast } from "sonner";
 
 interface BlogPostSectionProps {
   content: string;
-  isGenerating: boolean;
-  progress: number;
-  likes: number;
+  isGenerating?: boolean;
+  progress?: number;
+  likes?: number;
+  selectedLanguage: string;
+  onLanguageSelect: (language: string) => void;
   onGenerate: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onLike: () => void;
-  onSave: (content: string) => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onLike?: () => void;
+  onSave?: (content: string) => void;
 }
 
 const BlogPostSection = ({
   content,
-  isGenerating,
-  progress,
-  likes,
+  isGenerating = false,
+  progress = 0,
+  likes = 0,
+  selectedLanguage,
+  onLanguageSelect,
   onGenerate,
   onEdit,
   onDelete,
@@ -32,10 +36,9 @@ const BlogPostSection = ({
 }: BlogPostSectionProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(content);
-  const [selectedLanguage, setSelectedLanguage] = useState('English');
 
   const handleEdit = () => {
-    if (isEditing) {
+    if (isEditing && onSave) {
       onSave(editContent);
       setIsEditing(false);
       toast.success("Blog post saved successfully!");
@@ -52,7 +55,7 @@ const BlogPostSection = ({
         <div className="flex gap-2 items-center">
           <TranslationDropdown
             selectedLanguage={selectedLanguage}
-            onLanguageSelect={setSelectedLanguage}
+            onLanguageSelect={onLanguageSelect}
           />
           <Button
             variant="outline"
@@ -89,21 +92,25 @@ const BlogPostSection = ({
             >
               {isEditing ? <Save className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onDelete}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onLike}
-              className={likes > 0 ? "text-pink-500" : ""}
-            >
-              <Heart className="h-4 w-4" />
-            </Button>
+            {onDelete && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onDelete}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+            {onLike && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onLike}
+                className={likes > 0 ? "text-pink-500" : ""}
+              >
+                <Heart className="h-4 w-4" />
+              </Button>
+            )}
             {likes > 0 && (
               <span className="text-sm dark:text-gray-200">{likes}</span>
             )}
