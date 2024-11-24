@@ -7,11 +7,22 @@ interface PostActionsProps {
   content: string;
   onEdit: () => void;
   onDelete: () => void;
+  onSave: () => void;
   likes: number;
   onLike: () => void;
+  isEditing: boolean;
 }
 
-const PostActions = ({ type, content, onEdit, onDelete, likes, onLike }: PostActionsProps) => {
+const PostActions = ({ 
+  type, 
+  content, 
+  onEdit, 
+  onDelete, 
+  onSave,
+  likes, 
+  onLike,
+  isEditing 
+}: PostActionsProps) => {
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -36,7 +47,7 @@ const PostActions = ({ type, content, onEdit, onDelete, likes, onLike }: PostAct
         <Share2 className="h-4 w-4" />
       </Button>
       <Button variant="outline" size="icon" onClick={onEdit}>
-        <Edit2 className="h-4 w-4" />
+        {isEditing ? <Save className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
       </Button>
       <Button variant="outline" size="icon" onClick={onDelete}>
         <Trash2 className="h-4 w-4" />
