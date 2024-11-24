@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { generateContent } from '@/utils/api';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 import { Edit2, Trash2, Heart, Save } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Navigation from '@/components/Navigation';
@@ -33,9 +33,9 @@ const Results = () => {
     if (isEditing[type]) {
       setGeneratedContent(prev => ({ ...prev, [type]: editContent[type] }));
       setIsEditing(prev => ({ ...prev, [type]: false }));
-      toast({
-        title: "Changes saved",
+      toast("Changes saved", {
         description: `Your ${type} post has been updated`,
+        duration: 3000,
       });
     } else {
       setEditContent(prev => ({ ...prev, [type]: generatedContent[type] }));
@@ -46,17 +46,17 @@ const Results = () => {
   const handleDelete = (type: 'blog' | 'social') => {
     setGeneratedContent(prev => ({ ...prev, [type]: '' }));
     setIsEditing(prev => ({ ...prev, [type]: false }));
-    toast({
-      title: "Deleted",
+    toast("Content deleted", {
       description: `${type} post has been deleted`,
+      duration: 3000,
     });
   };
 
   const handleLike = (type: 'blog' | 'social') => {
     setLikes(prev => ({ ...prev, [type]: prev[type] + 1 }));
-    toast({
-      title: "Liked!",
+    toast("Liked!", {
       description: `You liked the ${type} post`,
+      duration: 3000,
     });
   };
 
@@ -73,9 +73,9 @@ const Results = () => {
     const savedHistory = JSON.parse(localStorage.getItem('lingoLensHistory') || '[]');
     localStorage.setItem('lingoLensHistory', JSON.stringify([historyItem, ...savedHistory]));
 
-    toast({
-      title: "Saved!",
+    toast("Content saved", {
       description: "Content has been saved to history",
+      duration: 3000,
     });
   };
 
@@ -86,7 +86,10 @@ const Results = () => {
 
   const handleAskQuestion = async () => {
     if (!question.trim()) {
-      toast.error("Please enter a question");
+      toast("Question required", {
+        description: "Please enter a question",
+        duration: 3000,
+      });
       return;
     }
 
@@ -98,7 +101,10 @@ const Results = () => {
       setAnswer(response);
       setQuestion('');
     } catch (error) {
-      toast.error("Failed to generate answer");
+      toast("Error", {
+        description: "Failed to generate answer",
+        duration: 3000,
+      });
     }
   };
 
