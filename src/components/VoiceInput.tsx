@@ -9,12 +9,16 @@ interface VoiceInputProps {
 
 const VoiceInput = ({ onTranscript }: VoiceInputProps) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
 
   const startRecording = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
     if (!SpeechRecognition) {
-      toast.error("Speech recognition is not supported in your browser");
+      toast("Speech recognition not supported", {
+        description: "Your browser doesn't support speech recognition",
+        duration: 3000,
+      });
       return;
     }
 
@@ -22,17 +26,20 @@ const VoiceInput = ({ onTranscript }: VoiceInputProps) => {
     recognition.continuous = true;
     recognition.interimResults = true;
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const transcript = Array.from(event.results)
-        .map((result: any) => result[0])
+        .map((result) => result[0])
         .map(result => result.transcript)
         .join('');
       
       onTranscript(transcript);
     };
 
-    recognition.onerror = (event: any) => {
-      toast.error("Error occurred in recognition: " + event.error);
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      toast("Recognition Error", {
+        description: "Error occurred in recognition: " + event.error,
+        duration: 3000,
+      });
     };
 
     recognition.start();
