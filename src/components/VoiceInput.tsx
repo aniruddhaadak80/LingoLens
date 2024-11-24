@@ -7,19 +7,12 @@ interface VoiceInputProps {
   onTranscript: (text: string) => void;
 }
 
-// Define the SpeechRecognition types
-interface IWindow extends Window {
-  SpeechRecognition?: typeof SpeechRecognition;
-  webkitSpeechRecognition?: typeof SpeechRecognition;
-}
-
 const VoiceInput = ({ onTranscript }: VoiceInputProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
 
   const startRecording = () => {
-    const windowWithSpeech = window as IWindow;
-    const SpeechRecognition = windowWithSpeech.SpeechRecognition || windowWithSpeech.webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
       toast("Speech recognition not supported", {
