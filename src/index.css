@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700&family=Noto+Sans:wght@400;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,18 +12,6 @@
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
     --radius: 0.75rem;
-    --processing-transcription: #8B5CF6;
-    --processing-translation: #D946EF;
-    --processing-blog: #F97316;
-    --processing-social: #0EA5E9;
-  }
-
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
   }
 
   * {
@@ -37,7 +25,7 @@
 }
 
 .glass-card {
-  @apply bg-card/80 backdrop-blur-md border border-white/20 shadow-lg dark:bg-gray-800/80 dark:border-gray-700/20;
+  @apply bg-card/80 backdrop-blur-md border border-white/20 shadow-lg;
 }
 
 .button-primary {
@@ -50,6 +38,5 @@
   @apply text-secondary/80 hover:text-secondary transition-colors duration-200
          relative after:absolute after:bottom-0 after:left-0 after:w-full 
          after:h-0.5 after:bg-primary after:scale-x-0 after:origin-right
-         after:transition-transform hover:after:scale-x-100 hover:after:origin-left
-         dark:text-gray-300 dark:hover:text-white;
+         after:transition-transform hover:after:scale-x-100 hover:after:origin-left;
 }
