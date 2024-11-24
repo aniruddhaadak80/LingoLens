@@ -10,7 +10,11 @@ import PostActions from '@/components/PostActions';
 import VoiceInput from '@/components/VoiceInput';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { useTheme } from 'next-themes';
+import { Edit2, Trash2, Heart, Save } from "lucide-react";
+import ShareDialog from '@/components/ShareDialog';
+import ProcessingBar from '@/components/ProcessingBar';
 
 const Results = () => {
   const location = useLocation();
