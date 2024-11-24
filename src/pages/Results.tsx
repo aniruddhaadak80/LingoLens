@@ -1,18 +1,16 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { generateContent } from '@/utils/api';
+import { generateContent, translateText } from '@/utils/api';
 import { toast } from "sonner";
-import { Edit2, Trash2, Heart, Save } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import TranslationDropdown from '@/components/TranslationDropdown';
-import ProcessingBar from '@/components/ProcessingBar';
-import ShareDialog from '@/components/ShareDialog';
+import ContentGenerationControls from '@/components/ContentGenerationControls';
+import PostActions from '@/components/PostActions';
 import VoiceInput from '@/components/VoiceInput';
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useTheme } from 'next-themes';
 
 const Results = () => {
   const location = useLocation();
@@ -21,12 +19,52 @@ const Results = () => {
   const [translatedText, setTranslatedText] = useState('');
   const [generatedContent, setGeneratedContent] = useState({ blog: '', social: '' });
   const [progress, setProgress] = useState({ transcription: 0, translation: 0, blog: 0, social: 0 });
+  const [isGenerating, setIsGenerating] = useState({ translation: false, blog: false, social: false });
   const [likes, setLikes] = useState({ blog: 0, social: 0 });
   const [isEditing, setIsEditing] = useState({ blog: false, social: false });
   const [editContent, setEditContent] = useState({ blog: '', social: '' });
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const { theme } = useTheme();
+
+  const handleTranslate = async () => {
+    if (!selectedLanguage) {
+      toast("Please select a language first");
+      return;
+    }
+    
+    setIsGenerating(prev => ({ ...prev, translation: true }));
+    try {
+      const translated = await translateText(
+        transcriptionData?.text,
+        selectedLanguage,
+        (progress) => setProgress(prev => ({ ...prev, translation: progress }))
+      );
+      setTranslatedText(translated);
+      toast("Translation complete!");
+    } catch (error) {
+      toast("Failed to translate text");
+    } finally {
+      setIsGenerating(prev => ({ ...prev, translation: false }));
+    }
+  };
+
+  const handleGenerateContent = async (type: 'blog' | 'social') => {
+    setIsGenerating(prev => ({ ...prev, [type]: true }));
+    try {
+      const content = await generateContent(
+        transcriptionData?.text,
+        type,
+        (progress) => setProgress(prev => ({ ...prev, [type]: progress }))
+      );
+      setGeneratedContent(prev => ({ ...prev, [type]: content }));
+      toast(`${type} post generated!`);
+    } catch (error) {
+      toast(`Failed to generate ${type} post`);
+    } finally {
+      setIsGenerating(prev => ({ ...prev, [type]: false }));
+    }
+  };
 
   const handleEdit = (type: 'blog' | 'social') => {
     if (isEditing[type]) {
@@ -121,10 +159,20 @@ const Results = () => {
             <p className="whitespace-pre-wrap font-transcript dark:text-gray-200">
               {transcriptionData?.text}
             </p>
-            {progress.transcription > 0 && progress.transcription < 100 && (
-              <ProcessingBar type="transcription" progress={progress.transcription} />
-            )}
           </div>
+
+          {/* Content Generation Controls */}
+          <ContentGenerationControls
+            onTranslate={handleTranslate}
+            onGenerateBlog={() => handleGenerateContent('blog')}
+            onGenerateSocial={() => handleGenerateContent('social')}
+            isTranslating={isGenerating.translation}
+            isGeneratingBlog={isGenerating.blog}
+            isGeneratingSocial={isGenerating.social}
+            translationProgress={progress.translation}
+            blogProgress={progress.blog}
+            socialProgress={progress.social}
+          />
 
           {/* Translation Section */}
           <div className="glass-card p-6 rounded-lg">
@@ -136,9 +184,6 @@ const Results = () => {
                 selectedLanguage={selectedLanguage}
                 onLanguageSelect={setSelectedLanguage}
               />
-              {progress.translation > 0 && progress.translation < 100 && (
-                <ProcessingBar type="translation" progress={progress.translation} />
-              )}
               {translatedText && (
                 <p className="whitespace-pre-wrap font-translation dark:text-gray-200">
                   {translatedText}
