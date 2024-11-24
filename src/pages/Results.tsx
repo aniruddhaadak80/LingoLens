@@ -3,12 +3,9 @@ import { useLocation } from 'react-router-dom';
 import { toast } from "sonner";
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import TranslationDropdown from '@/components/TranslationDropdown';
-import VoiceInput from '@/components/VoiceInput';
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import BlogPostSection from '@/components/BlogPostSection';
 import SocialPostSection from '@/components/SocialPostSection';
+import TranslationSection from '@/components/TranslationSection';
 import UploadSection from '@/components/UploadSection';
 import QAHistory from '@/components/QAHistory';
 import { generateContent, translateText } from '@/utils/api';
@@ -36,22 +33,30 @@ const Results = () => {
   });
 
   const [isGenerating, setIsGenerating] = useState({
+    translation: false,
     blog: false,
     social: false
   });
 
   const [progress, setProgress] = useState({
+    translation: 0,
+    blog: 0,
+    social: 0
+  });
+
+  const [likes, setLikes] = useState({
     blog: 0,
     social: 0
   });
   
   const [qaHistory, setQAHistory] = useState<QAItem[]>([]);
-  const [question, setQuestion] = useState('');
-  const [hasAskedQuestion, setHasAskedQuestion] = useState(false);
 
   const handleTranslate = async (type: 'transcript' | 'blog' | 'social', text: string, targetLanguage: string) => {
+    setIsGenerating(prev => ({ ...prev, translation: true }));
     try {
-      const translated = await translateText(text, targetLanguage);
+      const translated = await translateText(text, targetLanguage, (progress) => {
+        setProgress(prev => ({ ...prev, translation: progress }));
+      });
       if (type === 'transcript') {
         setContents(prev => ({ ...prev, translatedText: translated }));
       } else {
@@ -60,63 +65,52 @@ const Results = () => {
       toast.success(`${type} translated successfully!`);
     } catch (error) {
       toast.error(`Failed to translate ${type}`);
+    } finally {
+      setIsGenerating(prev => ({ ...prev, translation: false }));
     }
   };
 
+  const handleSaveToHistory = () => {
+    const historyItem = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      transcript: transcriptionData?.text || '',
+      translatedText: contents.translatedText,
+      blogPost: contents.blog,
+      socialPost: contents.social,
+      qaHistory
+    };
+
+    const savedHistory = localStorage.getItem('lingoLensHistory');
+    const history = savedHistory ? JSON.parse(savedHistory) : [];
+    history.push(historyItem);
+    localStorage.setItem('lingoLensHistory', JSON.stringify(history));
+    toast.success('Content saved to history!');
+  };
+
   const handleGenerateContent = async (type: 'blog' | 'social') => {
+    setIsGenerating(prev => ({ ...prev, [type]: true }));
     try {
-      const content = await generateContent(transcriptionData?.text, type);
+      const content = await generateContent(transcriptionData?.text, type, (progress) => {
+        setProgress(prev => ({ ...prev, [type]: progress }));
+      });
       setContents(prev => ({ ...prev, [type]: content }));
       toast.success(`${type} post generated!`);
     } catch (error) {
       toast.error(`Failed to generate ${type} post`);
+    } finally {
+      setIsGenerating(prev => ({ ...prev, [type]: false }));
     }
   };
 
-  const handleAskQuestion = async () => {
-    if (!question.trim() && !hasAskedQuestion) {
-      toast.error("Please enter a question");
-      return;
-    }
-
-    try {
-      const answer = await generateContent(
-        `Question about this transcript: "${question}"\n\nTranscript: "${transcriptionData?.text}"`,
-        'qa'
-      );
-      
-      const newQAItem: QAItem = {
-        question,
-        answer,
-        timestamp: new Date().toLocaleString()
-      };
-      
-      setQAHistory(prev => [...prev, newQAItem]);
-      setQuestion('');
-      setHasAskedQuestion(true);
-    } catch (error) {
-      if (!hasAskedQuestion) {
-        toast.error("Failed to generate answer");
-      }
-    }
+  const handleDelete = (type: 'blog' | 'social') => {
+    setContents(prev => ({ ...prev, [type]: '' }));
+    toast.success(`${type} post deleted`);
   };
 
-  const handleFileUpload = async (file: File) => {
-    // Implement file upload logic here
-    toast.success("New file uploaded successfully!");
+  const handleLike = (type: 'blog' | 'social') => {
+    setLikes(prev => ({ ...prev, [type]: prev[type] + 1 }));
   };
-
-  useEffect(() => {
-    // Save QA history to localStorage
-    const savedHistory = localStorage.getItem('qaHistory');
-    if (savedHistory) {
-      setQAHistory(JSON.parse(savedHistory));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('qaHistory', JSON.stringify(qaHistory));
-  }, [qaHistory]);
 
   return (
     <div className="min-h-screen bg-background dark:bg-gray-900">
@@ -124,28 +118,22 @@ const Results = () => {
       
       <div className="container mx-auto px-4 py-8 mt-16">
         <div className="space-y-8">
-          <UploadSection onFileUpload={handleFileUpload} />
+          <UploadSection onFileUpload={(file) => {
+            toast.success("New file uploaded successfully!");
+          }} />
 
-          {/* Transcript Section */}
-          <div className="glass-card p-6 rounded-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold font-transcript dark:text-white">
-                Transcript
-              </h2>
-              <div className="flex gap-2">
-                <TranslationDropdown
-                  selectedLanguage={selectedLanguages.transcript}
-                  onLanguageSelect={(lang) => {
-                    setSelectedLanguages(prev => ({ ...prev, transcript: lang }));
-                    handleTranslate('transcript', transcriptionData?.text, lang);
-                  }}
-                />
-              </div>
-            </div>
-            <p className="whitespace-pre-wrap font-transcript dark:text-gray-200">
-              {contents.translatedText || transcriptionData?.text}
-            </p>
-          </div>
+          <TranslationSection
+            content={transcriptionData?.text || ''}
+            isTranslating={isGenerating.translation}
+            progress={progress.translation}
+            selectedLanguage={selectedLanguages.transcript}
+            onLanguageSelect={(lang) => {
+              setSelectedLanguages(prev => ({ ...prev, transcript: lang }));
+              handleTranslate('transcript', transcriptionData?.text, lang);
+            }}
+            onTranslate={() => handleTranslate('transcript', transcriptionData?.text, selectedLanguages.transcript)}
+            onSave={handleSaveToHistory}
+          />
 
           <BlogPostSection
             content={contents.blog}
@@ -158,11 +146,10 @@ const Results = () => {
                 handleTranslate('blog', contents.blog, lang);
               }
             }}
-            onGenerate={async () => {
-              setIsGenerating(prev => ({ ...prev, blog: true }));
-              await handleGenerateContent('blog');
-              setIsGenerating(prev => ({ ...prev, blog: false }));
-            }}
+            onGenerate={() => handleGenerateContent('blog')}
+            onDelete={() => handleDelete('blog')}
+            onLike={() => handleLike('blog')}
+            likes={likes.blog}
           />
 
           <SocialPostSection
@@ -176,35 +163,13 @@ const Results = () => {
                 handleTranslate('social', contents.social, lang);
               }
             }}
-            onGenerate={async () => {
-              setIsGenerating(prev => ({ ...prev, social: true }));
-              await handleGenerateContent('social');
-              setIsGenerating(prev => ({ ...prev, social: false }));
-            }}
+            onGenerate={() => handleGenerateContent('social')}
+            onDelete={() => handleDelete('social')}
+            onLike={() => handleLike('social')}
+            likes={likes.social}
           />
 
-          {/* Q&A Section */}
-          <div className="glass-card p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4 dark:text-white">
-              Ask Questions
-            </h2>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="Ask a question about the transcript..."
-                  className="flex-1 dark:bg-gray-800 dark:text-gray-200"
-                />
-                <VoiceInput onTranscript={(text) => {
-                  setQuestion(text);
-                  handleAskQuestion();
-                }} />
-                <Button onClick={handleAskQuestion}>Ask</Button>
-              </div>
-              <QAHistory items={qaHistory} />
-            </div>
-          </div>
+          <QAHistory items={qaHistory} />
         </div>
       </div>
 
