@@ -69,16 +69,22 @@ export const transcribeAudio = async (file: File, onProgress: (progress: number)
   }
 };
 
-export const generateContent = async (transcript: string, type: 'blog' | 'social', onProgress: (progress: number) => void) => {
-  onProgress(25);
+export const generateContent = async (text: string, type: 'blog' | 'social' | 'qa', onProgress?: (progress: number) => void) => {
+  onProgress?.(25);
   try {
     // Try Gemini first
+    const prompt = type === 'qa' 
+      ? text 
+      : type === 'blog'
+        ? `Generate an engaging blog post with relevant emojis based on this transcript: ${text}`
+        : `Generate a social media post with relevant emojis based on this transcript: ${text}`;
+
     const response = await axios.post(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
       {
         contents: [{
           parts: [{
-            text: `Generate a ${type} post based on the following transcript: ${transcript}`
+            text: prompt
           }]
         }]
       },
@@ -89,23 +95,27 @@ export const generateContent = async (transcript: string, type: 'blog' | 'social
         },
       }
     );
-    onProgress(100);
+    onProgress?.(100);
     return response.data.candidates[0].content.parts[0].text;
   } catch (error) {
     // Fallback to OpenAI
-    onProgress(50);
+    onProgress?.(50);
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: 'gpt-4',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: `Generate a ${type} post based on the following transcript:`,
+            content: type === 'qa' 
+              ? 'You are a helpful assistant answering questions about a transcript.'
+              : type === 'blog'
+                ? 'Generate an engaging blog post with relevant emojis.'
+                : 'Generate a social media post with relevant emojis.',
           },
           {
             role: 'user',
-            content: transcript,
+            content: text,
           },
         ],
       },
@@ -116,7 +126,7 @@ export const generateContent = async (transcript: string, type: 'blog' | 'social
         },
       }
     );
-    onProgress(100);
+    onProgress?.(100);
     return response.data.choices[0].message.content;
   }
 };
