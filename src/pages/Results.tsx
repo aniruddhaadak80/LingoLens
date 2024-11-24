@@ -26,7 +26,6 @@ const Results = () => {
   const [editContent, setEditContent] = useState({ blog: '', social: '' });
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
-  const { toast } = useToast();
   const { theme } = useTheme();
 
   const handleEdit = (type: 'blog' | 'social') => {
