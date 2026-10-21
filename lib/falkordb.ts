@@ -37,9 +37,29 @@ function connectFalkorDB(): Promise<FalkorDB> {
   return clientPromise;
 }
 
-/** Strip anything that isn't safe inside a graph identifier. */
+/**
+ * Strip anything that isn't safe inside a graph identifier.
+ *
+ * The readable part is kept so the graph list stays legible, but a short
+ * hash of the ORIGINAL id is appended. Without it the mapping is lossy:
+ * "acme-corp" and "acme.corp" would both become "acme_corp" and the two
+ * tenants would share one memory graph — and therefore each other's
+ * memories.
+ */
 export function sanitizeTenantId(tenantId: string): string {
-  return (tenantId || "default").replace(/[^a-zA-Z0-9_]/g, "_").slice(0, 64);
+  const raw = tenantId || "default";
+  const slug = raw.replace(/[^a-zA-Z0-9_]/g, "_").slice(0, 48);
+  return `${slug}_${hash32(raw)}`;
+}
+
+/** FNV-1a, 32-bit. Not cryptographic — it only has to make the mapping injective. */
+function hash32(input: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, "0");
 }
 
 /** Shared company knowledge graph. */

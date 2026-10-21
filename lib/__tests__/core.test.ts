@@ -41,8 +41,8 @@ describe("tenant isolation (multigraph topology)", () => {
     const a = sanitizeTenantId("user-alice");
     const b = sanitizeTenantId("user-bob");
     expect(a).not.toBe(b);
-    expect(a).toBe("user_alice");
-    expect(b).toBe("user_bob");
+    expect(a).toMatch(/^user_alice_/);
+    expect(b).toMatch(/^user_bob_/);
   });
 
   test("sanitizes unsafe characters", () => {
@@ -52,8 +52,28 @@ describe("tenant isolation (multigraph topology)", () => {
   });
 
   test("falls back to default for empty tenant", () => {
-    expect(sanitizeTenantId("")).toBe("default");
+    expect(sanitizeTenantId("")).toMatch(/^default_/);
     expect(sanitizeTenantId("   ")).toMatch(/_+/);
+  });
+
+  test("ids that only differ in punctuation get different graphs", () => {
+    // The whole point of the multigraph layout is that two tenants never
+    // share a graph — and therefore never share memories.
+    expect(sanitizeTenantId("acme-corp")).not.toBe(sanitizeTenantId("acme.corp"));
+    expect(sanitizeTenantId("acme-corp")).not.toBe(sanitizeTenantId("acme corp"));
+    expect(sanitizeTenantId("acme-corp")).not.toBe(sanitizeTenantId("acme/corp"));
+    expect(sanitizeTenantId("user@example.com")).not.toBe(
+      sanitizeTenantId("user_example_com")
+    );
+  });
+
+  test("ids that only differ past the truncation point get different graphs", () => {
+    const long = "a".repeat(64);
+    expect(sanitizeTenantId(`${long}x`)).not.toBe(sanitizeTenantId(`${long}y`));
+  });
+
+  test("the same id always maps to the same graph", () => {
+    expect(sanitizeTenantId("acme-corp")).toBe(sanitizeTenantId("acme-corp"));
   });
 });
 
