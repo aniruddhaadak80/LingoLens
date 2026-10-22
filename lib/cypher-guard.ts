@@ -39,14 +39,99 @@ const READ_START = /^\s*(MATCH|OPTIONAL\s+MATCH|WITH|RETURN|CALL|UNWIND|SHOW)\b/
 
 export const MAX_CYPHER_LENGTH = 2000;
 
-/** Remove string literals, quoted identifiers and comments before scanning. */
+/**
+ * Remove string literals, quoted identifiers and comments before scanning.
+ *
+ * This is a single left-to-right scan, not a sequence of independent regex
+ * passes, because the constructs overlap: a `//` inside a string literal is
+ * part of the literal, and a `'` inside a comment is part of the comment.
+ * Stripping comments first would let a `//` in a literal swallow the rest of
+ * the line — including a `DETACH DELETE` — and hide it from the guard.
+ */
 export function stripCypherLiterals(query: string): string {
-  return query
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/\/\/[^\n]*/g, " ")
-    .replace(/'(?:[^'\\]|\\.)*'/g, "''")
-    .replace(/"(?:[^"\\]|\\.)*"/g, '""')
-    .replace(/`(?:[^`\\]|\\.)*`/g, "``");
+  let out = "";
+  let i = 0;
+  const n = query.length;
+
+  while (i < n) {
+    const ch = query[i]!;
+    const next = i + 1 < n ? query[i + 1] : "";
+
+    // Line comment: // ... to end of line.
+    if (ch === "/" && next === "/") {
+      while (i < n && query[i] !== "\n") i++;
+      out += " ";
+      continue;
+    }
+
+    // Block comment: /* ... */
+    if (ch === "/" && next === "*") {
+      i += 2;
+      while (i < n && !(query[i] === "*" && query[i + 1] === "/")) i++;
+      i = Math.min(n, i + 2);
+      out += " ";
+      continue;
+    }
+
+    // Single-quoted string literal.
+    if (ch === "'") {
+      i++;
+      while (i < n) {
+        if (query[i] === "\\") {
+          i += 2;
+          continue;
+        }
+        if (query[i] === "'") {
+          i++;
+          break;
+        }
+        i++;
+      }
+      out += "''";
+      continue;
+    }
+
+    // Double-quoted string literal.
+    if (ch === '"') {
+      i++;
+      while (i < n) {
+        if (query[i] === "\\") {
+          i += 2;
+          continue;
+        }
+        if (query[i] === '"') {
+          i++;
+          break;
+        }
+        i++;
+      }
+      out += '""';
+      continue;
+    }
+
+    // Backtick-quoted identifier.
+    if (ch === "`") {
+      i++;
+      while (i < n) {
+        if (query[i] === "\\") {
+          i += 2;
+          continue;
+        }
+        if (query[i] === "`") {
+          i++;
+          break;
+        }
+        i++;
+      }
+      out += "``";
+      continue;
+    }
+
+    out += ch;
+    i++;
+  }
+
+  return out;
 }
 
 /**
