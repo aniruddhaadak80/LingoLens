@@ -23,16 +23,25 @@ const VoiceInput = ({ onTranscript }: VoiceInputProps) => {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    recognition.continuous = false;
     recognition.interimResults = true;
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = Array.from(event.results)
+      const results = Array.from(event.results);
+      const last = results[results.length - 1];
+      // With interimResults the event fires for every partial chunk. Only a
+      // finished utterance is reported, so one spoken question results in one
+      // request instead of a burst of them.
+      if (!last || !last.isFinal) return;
+
+      const transcript = results
         .map((result) => result[0])
         .map(result => result.transcript)
         .join('');
-      
-      onTranscript(transcript);
+
+      if (transcript.trim()) {
+        onTranscript(transcript);
+      }
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -41,6 +50,8 @@ const VoiceInput = ({ onTranscript }: VoiceInputProps) => {
         duration: 3000,
       });
     };
+
+    recognition.onend = () => setIsRecording(false);
 
     recognition.start();
     setIsRecording(true);
