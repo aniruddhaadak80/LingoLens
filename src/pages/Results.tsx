@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { generateContent, translateText } from '@/utils/api';
 import { toast } from "sonner";
 import Navigation from '@/components/Navigation';
@@ -15,13 +15,25 @@ import { useTheme } from 'next-themes';
 import { Edit2, Trash2, Heart, Save } from "lucide-react";
 import ShareDialog from '@/components/ShareDialog';
 import ProcessingBar from '@/components/ProcessingBar';
+import { appendHistory, readHistoryItem } from '@/lib/history';
 
 const Results = () => {
   const location = useLocation();
-  const { transcriptionData } = location.state || {};
+  const [searchParams] = useSearchParams();
+  // The page is opened in two ways: straight after a transcription, where the
+  // Upload page passes the data through the router state, and from the
+  // History page, where the saved item is addressed with the ?id= query
+  // parameter.
+  const savedItem = useMemo(() => readHistoryItem(searchParams.get('id')), [searchParams]);
+  const transcriptionData =
+    location.state?.transcriptionData ?? (savedItem ? { text: savedItem.transcript } : undefined);
+
   const [selectedLanguage, setSelectedLanguage] = useState('');
-  const [translatedText, setTranslatedText] = useState('');
-  const [generatedContent, setGeneratedContent] = useState({ blog: '', social: '' });
+  const [translatedText, setTranslatedText] = useState(savedItem?.translation ?? '');
+  const [generatedContent, setGeneratedContent] = useState({
+    blog: savedItem?.blogPost ?? '',
+    social: savedItem?.socialPost ?? '',
+  });
   const [progress, setProgress] = useState({ transcription: 0, translation: 0, blog: 0, social: 0 });
   const [isGenerating, setIsGenerating] = useState({ translation: false, blog: false, social: false });
   const [likes, setLikes] = useState({ blog: 0, social: 0 });
@@ -111,8 +123,7 @@ const Results = () => {
       translation: translatedText
     };
 
-    const savedHistory = JSON.parse(localStorage.getItem('lingoLensHistory') || '[]');
-    localStorage.setItem('lingoLensHistory', JSON.stringify([historyItem, ...savedHistory]));
+    appendHistory(historyItem);
 
     toast("Content saved", {
       description: "Content has been saved to history",
