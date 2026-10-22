@@ -15,6 +15,7 @@ import { useTheme } from 'next-themes';
 import { Edit2, Trash2, Heart, Save } from "lucide-react";
 import ShareDialog from '@/components/ShareDialog';
 import ProcessingBar from '@/components/ProcessingBar';
+import { buildQuestionPrompt, resolveQuestionText } from '@/lib/ask';
 
 const Results = () => {
   const location = useLocation();
@@ -122,11 +123,15 @@ const Results = () => {
 
   const handleVoiceInput = async (transcript: string) => {
     setQuestion(transcript);
-    await handleAskQuestion();
+    // Pass the transcript straight through. The `question` state is not
+    // committed yet at this point, so reading it here would still return the
+    // old value and the question would be dropped.
+    await handleAskQuestion(transcript);
   };
 
-  const handleAskQuestion = async () => {
-    if (!question.trim()) {
+  const handleAskQuestion = async (explicitQuestion?: string) => {
+    const text = resolveQuestionText(explicitQuestion, question);
+    if (!text) {
       toast("Question required", {
         description: "Please enter a question",
         duration: 3000,
@@ -136,7 +141,7 @@ const Results = () => {
 
     try {
       const response = await generateContent(
-        `Question about this transcript: "${question}"\n\nTranscript: "${transcriptionData?.text}"`,
+        buildQuestionPrompt(text, transcriptionData?.text),
         'qa'
       );
       setAnswer(response);
@@ -323,7 +328,7 @@ const Results = () => {
                   className="flex-1 dark:bg-gray-800 dark:text-gray-200"
                 />
                 <VoiceInput onTranscript={handleVoiceInput} />
-                <Button onClick={handleAskQuestion}>Ask</Button>
+                <Button onClick={() => handleAskQuestion()}>Ask</Button>
               </div>
               {answer && (
                 <div className="p-4 rounded-lg bg-card/80 backdrop-blur-sm dark:bg-gray-800/80">
