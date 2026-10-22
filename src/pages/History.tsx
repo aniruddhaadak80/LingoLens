@@ -4,24 +4,14 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
-
-interface HistoryItem {
-  id: string;
-  date: string;
-  transcript: string;
-  blogPost: string;
-  socialPost: string;
-}
+import { readHistory, type HistoryItem } from "@/lib/history";
 
 const History = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   useEffect(() => {
-    const savedHistory = localStorage.getItem("lingoLensHistory");
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory));
-    }
+    setHistory(readHistory());
   }, []);
 
   const toggleExpand = (id: string) => {
