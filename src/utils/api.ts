@@ -1,8 +1,10 @@
 import axios from 'axios';
 
-const ASSEMBLY_AI_KEY = 'REDACTED_ASSEMBLYAI_KEY';
-const GEMINI_API_KEY = 'REDACTED_GEMINI_API_KEY';
-const OPENAI_API_KEY = 'REDACTED_OPENAI_API_KEY';
+// API keys are loaded from environment variables (see .env.example).
+// Never hardcode keys here — add them to .env (gitignored) and use import.meta.env.
+const ASSEMBLY_AI_KEY = import.meta.env.VITE_ASSEMBLY_AI_KEY;
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
 interface TranscriptionResponse {
   text: string;
